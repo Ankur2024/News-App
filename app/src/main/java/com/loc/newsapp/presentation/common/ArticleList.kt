@@ -15,25 +15,53 @@ import com.loc.newsapp.presentation.Dimens.ExtraSmallPadding
 import com.loc.newsapp.presentation.Dimens.ExtraSmallPadding2
 import com.loc.newsapp.presentation.Dimens.MediumPadding1
 
+
 @Composable
-fun ArticleList(
+fun ArticlesList(
     modifier: Modifier = Modifier,
-    article: LazyPagingItems<Article>,
+    articles: List<Article>,
     onClick: (Article) -> Unit
 ) {
-    val handlePagingResult = HandlePagingResult(article = article)
+    if (articles.isEmpty()){
+        EmptyScreen()
+    }
+    LazyColumn(
+        modifier = modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(MediumPadding1),
+        contentPadding = PaddingValues(all = ExtraSmallPadding2)
+    ) {
+        items(
+            count = articles.size,
+        ) {
+            articles[it]?.let { article ->
+                ArticleCard(article = article, onClick = { onClick(article) })
+            }
+        }
+    }
+
+}
+
+@Composable
+fun ArticlesList(
+    modifier: Modifier = Modifier,
+    articles: LazyPagingItems<Article>,
+    onClick: (Article) -> Unit
+) {
+
+    val handlePagingResult = handlePagingResult(articles)
+
+
     if (handlePagingResult) {
         LazyColumn(
-            modifier = Modifier.fillMaxSize(),
+            modifier = modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(MediumPadding1),
             contentPadding = PaddingValues(all = ExtraSmallPadding2)
         ) {
-            items(count = article.itemCount) { index ->
-                article[index]?.let {
-                    ArticleCard(
-                        article = it,
-                        onClick = { onClick(it) }
-                    )
+            items(
+                count = articles.itemCount,
+            ) {
+                articles[it]?.let { article ->
+                    ArticleCard(article = article, onClick = { onClick(article) })
                 }
             }
         }
@@ -41,32 +69,35 @@ fun ArticleList(
 }
 
 @Composable
-fun HandlePagingResult(article: LazyPagingItems<Article>): Boolean {
-    val loadState = article.loadState
+fun handlePagingResult(articles: LazyPagingItems<Article>): Boolean {
+    val loadState = articles.loadState
     val error = when {
         loadState.refresh is LoadState.Error -> loadState.refresh as LoadState.Error
         loadState.prepend is LoadState.Error -> loadState.prepend as LoadState.Error
         loadState.append is LoadState.Error -> loadState.append as LoadState.Error
         else -> null
     }
+
     return when {
         loadState.refresh is LoadState.Loading -> {
             ShimmerEffect()
             false
         }
+
         error != null -> {
-            EmptyScreen()
+            EmptyScreen(error = error)
             false
         }
-        else -> true
+
+        else -> {
+            true
+        }
     }
 }
 
 @Composable
 fun ShimmerEffect() {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(MediumPadding1)
-    ) {
+    Column(verticalArrangement = Arrangement.spacedBy(MediumPadding1)) {
         repeat(10) {
             ArticleCardShimmerEffect(
                 modifier = Modifier.padding(horizontal = MediumPadding1)
